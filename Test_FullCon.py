@@ -28,12 +28,12 @@ def train(module, train_data, optimizer_function, epoch_num):
         
 
 # test function
-def test(model, test_data, epoch_num):
+def test(model, test_data, epoch_num, writer):
     correct = 0
     with torch.no_grad():
         for t_data, target in test_data:
             t_data = t_data.view(t_data.size(0), -1)
-            t_data, target = Variable(t_data).to(device), Variable(target).to(device)
+            t_data, target = Variable(t_data), Variable(target)
             output = model(t_data)
             pred = output.max(1, keepdim=True)[1] 
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -41,7 +41,7 @@ def test(model, test_data, epoch_num):
     print("\nTest set: Epoch:{} Accuracy: {}/{} ({:.2f}%) \n".format(epoch_num, correct, len(test_data.dataset),
                                                                      100. * correct / len(test_data.dataset)))
     # record data in tensorboard log
-    writer.add_scalar('Accuracy/test', 100. * correct / len(test_data.dataset), epoch_num)
+    writer.add_scalar('Accuracy', 100. * correct / len(test_data.dataset), epoch_num)
 
 # Network structure
 class Net(nn.Module):
@@ -123,9 +123,9 @@ if __name__ == '__main__':
     hid1_max_list, hid1_min_list = [], []
     hid2_max_list, hid2_min_list = [], []
     out_max_list, out_min_list = [], []
-    nn.init.normal_(net.state_dict()['hidden1.weight'], mean=0, std=0.2)
-    nn.init.normal_(net.state_dict()['hidden2.weight'], mean=0, std=0.2)
-    nn.init.normal_(net.state_dict()['out.weight'], mean=0, std=0.2)
+    nn.init.normal_(net.state_dict()['hidden1.weight'], mean=0, std=0.1)
+    nn.init.normal_(net.state_dict()['hidden2.weight'], mean=0, std=0.1)
+    nn.init.normal_(net.state_dict()['out.weight'], mean=0, std=0.1)
     hidden1_weight = net.state_dict()['hidden1.weight'].numpy()
     hidden2_weight = net.state_dict()['hidden2.weight'].numpy()
     out_weight = net.state_dict()['out.weight'].numpy()

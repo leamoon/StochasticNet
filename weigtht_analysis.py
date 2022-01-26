@@ -1,5 +1,3 @@
-from traceback import print_tb
-from click import echo
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -7,6 +5,34 @@ from Test_FullCon import*
 import torch
 from torchvision import datasets, transforms
 from torch.utils import data
+import shutil
+from torch.utils.tensorboard import SummaryWriter
+
+def test(model, test_data, epoch_num, writer, decimal_number):
+    """ 
+    a function used to test the accuracy of neural network.
+
+    Args:
+        model (class): a neural network
+        test_data (iterator): test datas
+        epoch_num (int): repeat number of datasets used to train
+        writer (tensorboard): write log file for data visition
+        decimal_number (int): the significant number of weights
+    """
+    correct = 0
+    with torch.no_grad():
+        for t_data, target in test_data:
+            t_data = t_data.view(t_data.size(0), -1)
+            t_data, target = Variable(t_data), Variable(target)
+            output = model(t_data)
+            pred = output.max(1, keepdim=True)[1] 
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+    print("\nTest: Epoch:{} Accuracy: {}/{} ({:.2f}%) \n".format(epoch_num, correct, len(test_data.dataset),
+                                                                     100. * correct / len(test_data.dataset)))
+    # record data in tensorboard log
+    # writer.add_scalar(f'Accuracy_{decimal_number}', 100. * correct / len(test_data.dataset), epoch_num)
+    writer.add_scalar(f'Accuracy_{epoch_num}', 100. * correct / len(test_data.dataset), decimal_number)
 
 if __name__ == '__main__':
     # check for weight datas
@@ -27,7 +53,7 @@ if __name__ == '__main__':
     plt.plot(line_2, c='black', linestyle='--')
     plt.plot(line_minus_2, c='black', linestyle='--')
     plt.legend()
-    plt.show()
+    # plt.show()
     
     train_transformer = transforms.Compose([
         transforms.Resize(16), # down sampling
@@ -45,9 +71,25 @@ if __name__ == '__main__':
 
     # create the Neural Network
     net = Net(n_feature=size_inputs, n_hidden1=size_hidden1, n_hidden2=size_hidden2, n_output=size_outputs)
-    epoch_number = np.linspace(20, 40, 21, dtype=int)
-    for epoch_value in epoch_number:
-        weight_data_path = f'./weight_data/epoch_{epoch_value}'
-        print('raw: {}'.format(net.state_dict()['hidden1.weight']))
-        net.state_dict()['hidden1.weight'] = torch.tensor(np.load(f'{weight_data_path}\hidden1.npy'))
-        print('changed: {}'.format(net.state_dict()['hidden1.weight']))
+    
+    # data visition
+    tensorlog_path = 'FullConnect_Mnist'
+    if os.path.exists(tensorlog_path):
+        shutil.rmtree(tensorlog_path)
+    writer = SummaryWriter(tensorlog_path)
+    epoch_number_list = np.linspace(20, 40, 21, dtype=int)
+    decimal_number_list = np.linspace(0, 16, 17, dtype=int)
+    # for decimal_value in decimal_number_list:
+    for epoch_value in epoch_number_list:
+        for decimal_value in decimal_number_list:
+            net = torch.load(f'weight_data\epoch_{epoch_value}')
+            new_weights = net.state_dict()['out.weight'].numpy()
+            new_weights = torch.from_numpy(np.round(new_weights, decimal_value))
+            net.state_dict()['out.weight'].copy_(new_weights)
+            new_weights = net.state_dict()['hidden1.weight'].numpy()
+            new_weights = torch.from_numpy(np.round(new_weights, decimal_value))
+            net.state_dict()['hidden1.weight'].copy_(new_weights)
+            new_weights = net.state_dict()['hidden2.weight'].numpy()
+            new_weights = torch.from_numpy(np.round(new_weights, decimal_value))
+            net.state_dict()['hidden2.weight'].copy_(new_weights)
+            test(model=net, test_data=test_loader, epoch_num=epoch_value, writer=writer, decimal_number=decimal_value)
