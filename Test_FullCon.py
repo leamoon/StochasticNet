@@ -1,5 +1,3 @@
-from operator import mod
-import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -37,7 +35,7 @@ def test(model, test_data, epoch_num):
             t_data = t_data.view(t_data.size(0), -1)
             t_data, target = Variable(t_data).to(device), Variable(target).to(device)
             output = model(t_data)
-            pred = output.max(1, keepdim=True)[1]  # 找到概率最大的下标
+            pred = output.max(1, keepdim=True)[1] 
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     print("\nTest set: Epoch:{} Accuracy: {}/{} ({:.2f}%) \n".format(epoch_num, correct, len(test_data.dataset),
@@ -121,13 +119,13 @@ if __name__ == '__main__':
     net = Net(n_feature=size_inputs, n_hidden1=size_hidden1, n_hidden2=size_hidden2, n_output=size_outputs).to(device)
     print(net.state_dict().keys())
 
-    # record the weight data as np form
+    # record the weight datas as .npy form
     hid1_max_list, hid1_min_list = [], []
     hid2_max_list, hid2_min_list = [], []
     out_max_list, out_min_list = [], []
-    nn.init.normal_(net.state_dict()['hidden1.weight'], mean=0, std=0.1)
-    nn.init.normal_(net.state_dict()['hidden2.weight'], mean=0, std=0.1)
-    nn.init.normal_(net.state_dict()['out.weight'], mean=0, std=0.1)
+    nn.init.normal_(net.state_dict()['hidden1.weight'], mean=0, std=0.2)
+    nn.init.normal_(net.state_dict()['hidden2.weight'], mean=0, std=0.2)
+    nn.init.normal_(net.state_dict()['out.weight'], mean=0, std=0.2)
     hidden1_weight = net.state_dict()['hidden1.weight'].numpy()
     hidden2_weight = net.state_dict()['hidden2.weight'].numpy()
     out_weight = net.state_dict()['out.weight'].numpy()
@@ -158,16 +156,17 @@ if __name__ == '__main__':
         hidden2_weight = net.state_dict()['hidden2.weight'].numpy()
         out_weight = net.state_dict()['out.weight'].numpy()
  
-        data_save_path = f'weight_data\\epoch_{epoch}'
+        data_save_path = 'weight_data'
         if not os.path.exists(data_save_path):
             os.makedirs(data_save_path)
         # save data
-        np.save(f'{data_save_path}\\hidden1', hidden1_weight)
-        np.save(f'{data_save_path}\\hidden2', hidden2_weight)
-        np.save(f'{data_save_path}\\out_weight', out_weight)
-        print(f'hidden1 max: {np.max(hidden1_weight)} min: {np.min(hidden1_weight)}')
-        print(f'hidden2 max: {np.max(hidden2_weight)} min: {np.min(hidden2_weight)}')
-        print(f'out_weight max: {np.max(out_weight)} min: {np.min(out_weight)}')
+        torch.save(net, f'{data_save_path}/epoch_{epoch}')
+        # np.save(f'{data_save_path}\\hidden1', hidden1_weight)
+        # np.save(f'{data_save_path}\\hidden2', hidden2_weight)
+        # np.save(f'{data_save_path}\\out_weight', out_weight)
+        # print(f'hidden1 max: {np.max(hidden1_weight)} min: {np.min(hidden1_weight)}')
+        # print(f'hidden2 max: {np.max(hidden2_weight)} min: {np.min(hidden2_weight)}')
+        # print(f'out_weight max: {np.max(out_weight)} min: {np.min(out_weight)}')
         # save data
         hid1_max_list.append(np.max(hidden1_weight))
         hid1_min_list.append(np.min(hidden1_weight))

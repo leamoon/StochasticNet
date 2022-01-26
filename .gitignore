@@ -131,3 +131,4 @@ dmypy.json
 data/
 FullConnect_Mnist/
 weight_data/
+*.npy
