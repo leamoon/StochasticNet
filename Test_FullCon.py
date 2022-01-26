@@ -67,7 +67,7 @@ size_hidden2 = 32
 size_outputs = 10
 learning_rate = 0.01
 BATCH_SIZE = 1
-EPOCHS = 1000
+EPOCHS = 20
 
 
 if __name__ == '__main__':
@@ -85,10 +85,32 @@ if __name__ == '__main__':
     test_loader = data.DataLoader(
         datasets.MNIST('data', train=False, download=True, transform=train_transformer),
         batch_size=BATCH_SIZE, shuffle=True)
+    
+    # compare images (28x28 vs 16x16)
+    raw_train_data = data.DataLoader(
+        datasets.MNIST('data', train=True, download=True, transform=transforms.ToTensor()),
+        batch_size=BATCH_SIZE, shuffle=False)
+    transform_train_data = data.DataLoader(
+        datasets.MNIST('data', train=True, download=True, transform=train_transformer),
+        batch_size=BATCH_SIZE, shuffle=False)
+
+    # check for data
+    for batch_idx, (t_data, target) in enumerate(raw_train_data):
+        t_data = t_data.view(28, 28)
+        if batch_idx < 3:
+            plt.figure(f'raw data {batch_idx}')
+            plt.imshow(t_data)
+    
+    for batch_idx, (t_data, target) in enumerate(transform_train_data):
+        t_data = t_data.view(16, 16)
+        if batch_idx < 3:
+            plt.figure(f'transformed data {batch_idx}')
+            plt.imshow(t_data)
+    plt.show()
 
     # cuda acceleration
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    device = 'cpu'
+    device = 'cpu'  # in MNIST recognition 'GPu' is slower than 'cpu'
     print(f"Using {device} device")
     
     # create a network sample
@@ -98,15 +120,8 @@ if __name__ == '__main__':
     Loss_function = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=learning_rate)
 
-    # check for data
-    # for batch_idx, (t_data, target) in enumerate(train_loader):
-    #     t_data = t_data.view(16, 16)
-    #     plt.figure()
-    #     plt.imshow(t_data)
-    #     plt.show()
-
     # tensorboard
-    writer = SummaryWriter('D:\\Python_projects\\StochasticNet\\FullConnect_Mnist')
+    writer = SummaryWriter('FullConnect_Mnist')
     for epoch in range(1, EPOCHS + 1):
         train(module=net, train_data=train_loader, optimizer_function=optimizer, epoch_num=epoch)
         test(model=net, test_data=test_loader, epoch_num=epoch)
