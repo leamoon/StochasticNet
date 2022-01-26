@@ -1,3 +1,4 @@
+from operator import mod
 import time
 import torch
 import torch.nn as nn
@@ -9,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import shutil
 
 
 # train function
@@ -25,7 +27,7 @@ def train(module, train_data, optimizer_function, epoch_num):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch_num, batch_idx * len(t_data), len(train_data.dataset),
                 100. * batch_idx / len(train_data), loss.item()))
-
+        
 
 # test function
 def test(model, test_data, epoch_num):
@@ -40,8 +42,8 @@ def test(model, test_data, epoch_num):
 
     print("\nTest set: Epoch:{} Accuracy: {}/{} ({:.2f}%) \n".format(epoch_num, correct, len(test_data.dataset),
                                                                      100. * correct / len(test_data.dataset)))
-    if 'writer' in locals().keys():
-        writer.add_scalar('Accuracy/test', 100. * correct / len(test_data.dataset), epoch_num)
+    # record data in tensorboard log
+    writer.add_scalar('Accuracy/test', 100. * correct / len(test_data.dataset), epoch_num)
 
 # Network structure
 class Net(nn.Module):
@@ -67,7 +69,7 @@ size_hidden2 = 32
 size_outputs = 10
 learning_rate = 0.01
 BATCH_SIZE = 1
-EPOCHS = 20
+EPOCHS = 100
 
 
 if __name__ == '__main__':
@@ -95,18 +97,20 @@ if __name__ == '__main__':
         batch_size=BATCH_SIZE, shuffle=False)
 
     # check for data
-    for batch_idx, (t_data, target) in enumerate(raw_train_data):
-        t_data = t_data.view(28, 28)
-        if batch_idx < 3:
-            plt.figure(f'raw data {batch_idx}')
-            plt.imshow(t_data)
-    
-    for batch_idx, (t_data, target) in enumerate(transform_train_data):
-        t_data = t_data.view(16, 16)
-        if batch_idx < 3:
-            plt.figure(f'transformed data {batch_idx}')
-            plt.imshow(t_data)
-    plt.show()
+    show_fig = False
+    if show_fig:
+        for batch_idx, (t_data, target) in enumerate(raw_train_data):
+            t_data = t_data.view(28, 28)
+            if batch_idx < 3:
+                plt.figure(f'raw data {batch_idx}')
+                plt.imshow(t_data)
+        
+        for batch_idx, (t_data, target) in enumerate(transform_train_data):
+            t_data = t_data.view(16, 16)
+            if batch_idx < 3:
+                plt.figure(f'transformed data {batch_idx}')
+                plt.imshow(t_data)
+        plt.show()
 
     # cuda acceleration
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -115,13 +119,37 @@ if __name__ == '__main__':
     
     # create a network sample
     net = Net(n_feature=size_inputs, n_hidden1=size_hidden1, n_hidden2=size_hidden2, n_output=size_outputs).to(device)
+    print(net.state_dict().keys())
+
+    # record the weight data as np form
+    hid1_max_list, hid1_min_list = [], []
+    hid2_max_list, hid2_min_list = [], []
+    out_max_list, out_min_list = [], []
+    nn.init.normal_(net.state_dict()['hidden1.weight'], mean=0, std=0.1)
+    nn.init.normal_(net.state_dict()['hidden2.weight'], mean=0, std=0.1)
+    nn.init.normal_(net.state_dict()['out.weight'], mean=0, std=0.1)
+    hidden1_weight = net.state_dict()['hidden1.weight'].numpy()
+    hidden2_weight = net.state_dict()['hidden2.weight'].numpy()
+    out_weight = net.state_dict()['out.weight'].numpy()
+    print(f'hidden1 max: {np.max(hidden1_weight)} min: {np.min(hidden1_weight)}')
+    print(f'hidden2 max: {np.max(hidden2_weight)} min: {np.min(hidden2_weight)}')
+    print(f'out_weight max: {np.max(out_weight)} min: {np.min(out_weight)}')
+    hid1_max_list.append(np.max(hidden1_weight))
+    hid1_min_list.append(np.min(hidden1_weight))
+    hid2_max_list.append(np.max(hidden2_weight))
+    hid2_min_list.append(np.min(hidden2_weight))
+    out_max_list.append(np.max(out_weight))
+    out_min_list.append(np.min(out_weight))
 
     # loss function and optimizer
     Loss_function = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=learning_rate)
 
     # tensorboard
-    writer = SummaryWriter('FullConnect_Mnist')
+    tensorlog_path = 'FullConnect_Mnist'
+    if os.path.exists(tensorlog_path):
+        shutil.rmtree(tensorlog_path)
+    writer = SummaryWriter(tensorlog_path)
     for epoch in range(1, EPOCHS + 1):
         train(module=net, train_data=train_loader, optimizer_function=optimizer, epoch_num=epoch)
         test(model=net, test_data=test_loader, epoch_num=epoch)
@@ -140,3 +168,16 @@ if __name__ == '__main__':
         print(f'hidden1 max: {np.max(hidden1_weight)} min: {np.min(hidden1_weight)}')
         print(f'hidden2 max: {np.max(hidden2_weight)} min: {np.min(hidden2_weight)}')
         print(f'out_weight max: {np.max(out_weight)} min: {np.min(out_weight)}')
+        # save data
+        hid1_max_list.append(np.max(hidden1_weight))
+        hid1_min_list.append(np.min(hidden1_weight))
+        hid2_max_list.append(np.max(hidden2_weight))
+        hid2_min_list.append(np.min(hidden2_weight))
+        out_max_list.append(np.max(out_weight))
+        out_min_list.append(np.min(out_weight))
+    np.save('hid1_min_list', hid1_min_list)
+    np.save('hid2_min_list', hid2_min_list)
+    np.save('out_min_list', out_min_list)
+    np.save('hid1_max_list', hid1_max_list)
+    np.save('hid2_max_list', hid2_max_list)
+    np.save('out_max_list', out_max_list)
