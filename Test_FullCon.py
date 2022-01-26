@@ -129,9 +129,7 @@ if __name__ == '__main__':
         hidden1_weight = net.state_dict()['hidden1.weight'].numpy()
         hidden2_weight = net.state_dict()['hidden2.weight'].numpy()
         out_weight = net.state_dict()['out.weight'].numpy()
-        # print(f'hidden1_weight: {hidden1_weight}')
-        # print(f'hidden2_weight: {hidden2_weight}')
-        # print(f'out_weight: {out_weight}')
+ 
         data_save_path = f'weight_data\\epoch_{epoch}'
         if not os.path.exists(data_save_path):
             os.makedirs(data_save_path)
