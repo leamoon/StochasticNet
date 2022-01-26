@@ -79,6 +79,7 @@ if __name__ == '__main__':
     writer = SummaryWriter(tensorlog_path)
     epoch_number_list = np.linspace(20, 40, 21, dtype=int)
     decimal_number_list = np.linspace(0, 16, 17, dtype=int)
+    
     # for decimal_value in decimal_number_list:
     for epoch_value in epoch_number_list:
         for decimal_value in decimal_number_list:
