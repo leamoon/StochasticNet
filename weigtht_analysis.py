@@ -23,6 +23,8 @@ def test(model, test_data, epoch_num, writer, decimal_number):
     with torch.no_grad():
         for t_data, target in test_data:
             t_data = t_data.view(t_data.size(0), -1)
+            t_data_binary = np.ceil(t_data.numpy())
+            t_data = torch.from_numpy(t_data_binary)
             t_data, target = Variable(t_data), Variable(target)
             output = model(t_data)
             pred = output.max(1, keepdim=True)[1] 
@@ -53,7 +55,7 @@ if __name__ == '__main__':
     plt.plot(line_2, c='black', linestyle='--')
     plt.plot(line_minus_2, c='black', linestyle='--')
     plt.legend()
-    # plt.show()
+    plt.show()
     
     train_transformer = transforms.Compose([
         transforms.Resize(16), # down sampling
