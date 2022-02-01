@@ -37,6 +37,16 @@ def test(model, test_data, epoch_num, writer, decimal_number):
     writer.add_scalar(f'Accuracy_{epoch_num}', 100. * correct / len(test_data.dataset), decimal_number)
 
 if __name__ == '__main__':
+    # load the weight data and save them as .txt file.
+    net = Net(n_feature=size_inputs, n_hidden1=size_hidden1, n_hidden2=size_hidden2, n_output=size_outputs)
+    net = torch.load(f'weight_data\epoch_20')
+    new_weights = net.state_dict()['out.weight'].numpy()
+    np.savetxt('out_weight.txt', new_weights)
+    new_weights = net.state_dict()['hidden1.weight'].numpy()
+    np.savetxt('hidden1_weight.txt', new_weights)
+    new_weights = net.state_dict()['hidden2.weight'].numpy()
+    np.savetxt('hidden2_weight.txt', new_weights)
+
     # check for weight datas
     file_list = ['out_max_list.npy', 'out_min_list.npy', 'hid1_max_list.npy', 'hid2_max_list.npy',
     'hid1_min_list.npy', 'hid2_min_list.npy']
