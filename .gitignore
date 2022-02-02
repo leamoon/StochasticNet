@@ -132,3 +132,4 @@ data/
 FullConnect_Mnist/
 weight_data/
 *.npy
+*.txt

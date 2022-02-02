@@ -23,6 +23,8 @@ def test(model, test_data, epoch_num, writer, decimal_number):
     with torch.no_grad():
         for t_data, target in test_data:
             t_data = t_data.view(t_data.size(0), -1)
+            t_data_binary = np.ceil(t_data.numpy())
+            t_data = torch.from_numpy(t_data_binary)
             t_data, target = Variable(t_data), Variable(target)
             output = model(t_data)
             pred = output.max(1, keepdim=True)[1] 
@@ -35,6 +37,16 @@ def test(model, test_data, epoch_num, writer, decimal_number):
     writer.add_scalar(f'Accuracy_{epoch_num}', 100. * correct / len(test_data.dataset), decimal_number)
 
 if __name__ == '__main__':
+    # load the weight data and save them as .txt file.
+    net = Net(n_feature=size_inputs, n_hidden1=size_hidden1, n_hidden2=size_hidden2, n_output=size_outputs)
+    net = torch.load(f'weight_data\epoch_20')
+    new_weights = net.state_dict()['out.weight'].numpy()
+    np.savetxt('out_weight.txt', new_weights)
+    new_weights = net.state_dict()['hidden1.weight'].numpy()
+    np.savetxt('hidden1_weight.txt', new_weights)
+    new_weights = net.state_dict()['hidden2.weight'].numpy()
+    np.savetxt('hidden2_weight.txt', new_weights)
+
     # check for weight datas
     file_list = ['out_max_list.npy', 'out_min_list.npy', 'hid1_max_list.npy', 'hid2_max_list.npy',
     'hid1_min_list.npy', 'hid2_min_list.npy']
@@ -53,7 +65,7 @@ if __name__ == '__main__':
     plt.plot(line_2, c='black', linestyle='--')
     plt.plot(line_minus_2, c='black', linestyle='--')
     plt.legend()
-    # plt.show()
+    plt.show()
     
     train_transformer = transforms.Compose([
         transforms.Resize(16), # down sampling

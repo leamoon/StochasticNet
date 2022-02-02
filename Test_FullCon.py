@@ -9,12 +9,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import shutil
+import cv2
+import sys
 
 
 # train function
 def train(module, train_data, optimizer_function, epoch_num):
     for batch_idx, (t_data, target) in enumerate(train_data):
+        # data -> binary
         t_data = t_data.view(t_data.size(0), -1)
+        t_data_binary = np.ceil(t_data.numpy())
+        t_data = torch.from_numpy(t_data_binary)
         t_data, target = Variable(t_data).to(device), Variable(target).to(device)
         optimizer_function.zero_grad()
         output = module(t_data)
@@ -33,6 +38,8 @@ def test(model, test_data, epoch_num, writer):
     with torch.no_grad():
         for t_data, target in test_data:
             t_data = t_data.view(t_data.size(0), -1)
+            t_data_binary = np.ceil(t_data.numpy())
+            t_data = torch.from_numpy(t_data_binary)
             t_data, target = Variable(t_data), Variable(target)
             output = model(t_data)
             pred = output.max(1, keepdim=True)[1] 
@@ -99,16 +106,26 @@ if __name__ == '__main__':
     if show_fig:
         for batch_idx, (t_data, target) in enumerate(raw_train_data):
             t_data = t_data.view(28, 28)
+            t_data_binary = np.ceil(t_data.numpy())
+            t_data_binary = torch.from_numpy(t_data_binary)
+            # print(t_data)
             if batch_idx < 3:
                 plt.figure(f'raw data {batch_idx}')
                 plt.imshow(t_data)
+                
         
         for batch_idx, (t_data, target) in enumerate(transform_train_data):
             t_data = t_data.view(16, 16)
+            t_data_binary = np.ceil(t_data.numpy())
+            t_data_binary = torch.from_numpy(t_data_binary)
             if batch_idx < 3:
                 plt.figure(f'transformed data {batch_idx}')
                 plt.imshow(t_data)
+                plt.figure(f'data_binary {batch_idx}')
+                plt.imshow(t_data_binary)
+                print(t_data_binary)
         plt.show()
+        sys.exit(-1)
 
     # cuda acceleration
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -150,7 +167,7 @@ if __name__ == '__main__':
     writer = SummaryWriter(tensorlog_path)
     for epoch in range(1, EPOCHS + 1):
         train(module=net, train_data=train_loader, optimizer_function=optimizer, epoch_num=epoch)
-        test(model=net, test_data=test_loader, epoch_num=epoch)
+        test(model=net, test_data=test_loader, epoch_num=epoch, writer=writer)
         print(net.state_dict().keys())
         hidden1_weight = net.state_dict()['hidden1.weight'].numpy()
         hidden2_weight = net.state_dict()['hidden2.weight'].numpy()
