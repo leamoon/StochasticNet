@@ -102,7 +102,7 @@ if __name__ == '__main__':
         batch_size=BATCH_SIZE, shuffle=False)
 
     # check for data
-    show_fig = False
+    show_fig = True
     if show_fig:
         for batch_idx, (t_data, target) in enumerate(raw_train_data):
             t_data = t_data.view(28, 28)
@@ -113,9 +113,17 @@ if __name__ == '__main__':
                 plt.figure(f'raw data {batch_idx}')
                 plt.imshow(t_data)
                 
-        
+        target_number_list = []
         for batch_idx, (t_data, target) in enumerate(transform_train_data):
+            print(t_data)
             t_data = t_data.view(16, 16)
+            target_number_list.append(target)
+            # save data as a .txt file for zehan's test
+            if not os.path.exists('data_figures'):
+                os.mkdir('data_figures')
+            t_data_1 = t_data.numpy()
+            np.savetxt(f'data_figures/fig{batch_idx}.txt', t_data_1)
+            # print(t_data_1)
             t_data_binary = np.ceil(t_data.numpy())
             t_data_binary = torch.from_numpy(t_data_binary)
             if batch_idx < 3:
@@ -125,6 +133,7 @@ if __name__ == '__main__':
                 plt.imshow(t_data_binary)
                 print(t_data_binary)
         plt.show()
+        np.savetxt('value_list.txt', np.array(target_number_list))
         sys.exit(-1)
 
     # cuda acceleration
