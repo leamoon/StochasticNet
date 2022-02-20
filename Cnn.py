@@ -62,7 +62,7 @@ class Net(nn.Module):
 
     # connect inputs and outputs size: 15x15 -> 7x7 -> 30 -> 30 -> 10 
     def forward(self, x):
-        x = torch.tanh(self.conv1(x))
+        x = torch.relu(self.conv1(x))
         # x = self.pool(x)
         x = x.view(-1, 7*7)
         x = torch.tanh(self.fc1(x))
