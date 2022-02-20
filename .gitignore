@@ -130,7 +130,9 @@ dmypy.json
 .history/
 data/
 FullConnect_Mnist/
+CnnConnect_Mnist/
 weight_data/
 *.npy
 *.txt
 *.zip
+weight_data_cnn/
