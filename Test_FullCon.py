@@ -102,7 +102,7 @@ if __name__ == '__main__':
         batch_size=BATCH_SIZE, shuffle=False)
 
     # check for data
-    show_fig = True
+    show_fig = False
     if show_fig:
         for batch_idx, (t_data, target) in enumerate(raw_train_data):
             t_data = t_data.view(28, 28)
