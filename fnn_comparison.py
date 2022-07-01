@@ -76,7 +76,7 @@ net = torch.load(f'weight_data\epoch_20')
 correct_count = 0
 count_pytoch = 0
 
-for i in range(10000):
+for i in range(1000):
 
     fig_data = np.genfromtxt("data_figures/fig{}.txt".format(i))
     #fig_data = (fig_data > 0.5) # 二值化

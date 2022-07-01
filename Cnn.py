@@ -30,8 +30,23 @@ def train(module, train_data, optimizer_function, epoch_num):
                 epoch_num, batch_idx * len(t_data), len(train_data.dataset),
                 100. * batch_idx / len(train_data), loss.item()))
         
+        weight_control = True
+        if weight_control:
+            fc3_weight = net.state_dict()['fc3.weight'].numpy()
+            max_fc3_weight = np.max(np.abs(fc3_weight))
+            fc2_weight = net.state_dict()['fc2.weight'].numpy()
+            max_fc2_weight = np.max(np.abs(fc2_weight))
+            fc1_weight = net.state_dict()['fc1.weight'].numpy()
+            max_fc1_weight = np.max(np.abs(fc1_weight))
+            if max_fc1_weight >= 1:
+                net.state_dict()['fc1.weight'].copy_(torch.from_numpy(fc1_weight/max_fc1_weight))
+            if max_fc2_weight >= 1:
+                net.state_dict()['fc2.weight'].copy_(torch.from_numpy(fc2_weight/max_fc2_weight))
+            if max_fc3_weight >= 1:
+                net.state_dict()['fc3.weight'].copy_(torch.from_numpy(fc3_weight/max_fc3_weight))
 
 # test function
+# def test(model, test_data, epoch_num):
 def test(model, test_data, epoch_num, writer):
     correct = 0
     with torch.no_grad():
@@ -55,6 +70,8 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 1, kernel_size=3, stride=2, bias=False)
+        for p in self.parameters():
+            p.requires_grad=False
         # self.pool = nn.MaxPool2d(2, 2)
         self.fc1 = nn.Linear(7*7, 30, bias=False)
         self.fc2 = nn.Linear(30, 30, bias=False)
@@ -76,15 +93,15 @@ class Net(nn.Module):
 # size_hidden1 = 32
 # size_hidden2 = 32
 # size_outputs = 10
-learning_rate = 0.01
-BATCH_SIZE = 1
+learning_rate = 0.01 #0.005
+BATCH_SIZE = 5
 EPOCHS = 100
 
 
 if __name__ == '__main__':
     # data precoding
     train_transformer = transforms.Compose([
-        transforms.Resize(15), # down sampling
+        transforms.Resize(16), # down sampling
         transforms.ToTensor()
     ])
 
@@ -119,13 +136,13 @@ if __name__ == '__main__':
                 
         target_number_list = []
         for batch_idx, (t_data, target) in enumerate(transform_train_data):
-            t_data = t_data.view(15, 15)
+            t_data = t_data.view(16, 16)
             target_number_list.append(target)
             # save data as a .txt file for zehan's test
             if not os.path.exists('data_figures'):
                 os.mkdir('data_figures')
             t_data_1 = t_data.numpy()
-            # np.savetxt(f'data_figures/fig{batch_idx}.txt', t_data_1)
+            np.savetxt(f'data_figures/fig{batch_idx}.txt', t_data_1)
             # print(t_data_1)
             t_data_binary = np.ceil(t_data.numpy())
             t_data_binary = torch.from_numpy(t_data_binary)
@@ -134,9 +151,9 @@ if __name__ == '__main__':
                 plt.imshow(t_data)
                 plt.figure(f'data_binary {batch_idx}')
                 plt.imshow(t_data_binary)
-                print(t_data_binary)
+                # print(t_data_binary)
         plt.show()
-        # np.savetxt('value_list.txt', np.array(target_number_list))
+        np.savetxt('value_list.txt', np.array(target_number_list))
         sys.exit(-1)
 
     # cuda acceleration
@@ -157,9 +174,15 @@ if __name__ == '__main__':
 
     # initial weight contribution
     nn.init.normal_(net.state_dict()['conv1.weight'], mean=0, std=0.1)
-    nn.init.normal_(net.state_dict()['fc1.weight'], mean=0, std=0.1)
-    nn.init.normal_(net.state_dict()['fc2.weight'], mean=0, std=0.1)
-    nn.init.normal_(net.state_dict()['fc3.weight'], mean=0, std=0.1)
+    nn.init.normal_(net.state_dict()['fc1.weight'], mean=0, std=0.25)
+    nn.init.normal_(net.state_dict()['fc2.weight'], mean=0, std=0.2)
+    nn.init.normal_(net.state_dict()['fc3.weight'], mean=0, std=0.05)
+
+    # additional test from zehan
+    constant_weights = np.genfromtxt('constant_weight_conv1_zehan.txt')
+    constant_weights = torch.from_numpy(np.multiply(constant_weights, 1/16))
+    print(constant_weights)
+    net.state_dict()['conv1.weight'].copy_(constant_weights)
 
     conv1_weight = net.state_dict()['conv1.weight'].numpy()
     fc1_weight = net.state_dict()['fc1.weight'].numpy()
@@ -192,20 +215,26 @@ if __name__ == '__main__':
     
     for epoch in range(1, EPOCHS + 1):
         train(module=net, train_data=train_loader, optimizer_function=optimizer, epoch_num=epoch)
+        # test(model=net, test_data=test_loader, epoch_num=epoch)
         test(model=net, test_data=test_loader, epoch_num=epoch, writer=writer)
         print(net.state_dict().keys())
-        # conv1_weight = net.state_dict()['conv1.weight'].numpy()
-        # fc1_weight = net.state_dict()['fc1.weight'].numpy()
-        # fc2_weight = net.state_dict()['fc2.weight'].numpy()
+        conv1_weight = net.state_dict()['conv1.weight'].numpy().reshape(1, -1)
+        fc1_weight = net.state_dict()['fc1.weight'].numpy()
+        fc2_weight = net.state_dict()['fc2.weight'].numpy()
  
         data_save_path = 'weight_data_cnn'
         if not os.path.exists(data_save_path):
             os.makedirs(data_save_path)
         # save data
         torch.save(net, f'{data_save_path}/epoch_{epoch}')
-        # np.save(f'{data_save_path}\\hidden1', conv1_weight)
-        # np.save(f'{data_save_path}\\hidden2', fc1_weight)
-        # np.save(f'{data_save_path}\\fc2_weight', fc2_weight)
+        np.save(f'{data_save_path}\\hidden1', conv1_weight)
+        np.save(f'{data_save_path}\\hidden2', fc1_weight)
+        np.save(f'{data_save_path}\\fc2_weight', fc2_weight)
+        print(conv1_weight)
+        np.savetxt('conv1_weight_0617_2022.txt', conv1_weight)
+        np.savetxt('fc1_weight_0617_2022.txt', fc1_weight)
+        np.savetxt('fc2_weight_0617_2022.txt', fc2_weight)
+        np.savetxt('fc3_weight_0617_2022.txt', fc3_weight)
         # print(f'hidden1 max: {np.max(conv1_weight)} min: {np.min(conv1_weight)}')
         # print(f'hidden2 max: {np.max(fc1_weight)} min: {np.min(fc1_weight)}')
         # print(f'fc2_weight max: {np.max(fc2_weight)} min: {np.min(fc2_weight)}')
@@ -218,6 +247,11 @@ if __name__ == '__main__':
         fc2_min_list.append(np.min(fc2_weight))
         fc3_max_list.append(np.max(fc3_weight))
         fc3_min_list.append(np.min(fc3_weight))
+
+        print(f'conv1 max: {np.max(conv1_weight)} min: {np.min(conv1_weight)}')
+        print(f'fc1 max: {np.max(fc1_weight)} min: {np.min(fc1_weight)}')
+        print(f'fc2 max: {np.max(fc2_weight)} min: {np.min(fc2_weight)}')
+        print(f'fc3 max: {np.max(fc3_weight)} min: {np.min(fc3_weight)}')
     
     # save range of weight datas
     np.savetxt('conv1_min_list.txt', conv1_min_list)
